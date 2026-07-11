@@ -1,6 +1,7 @@
 /* ============================================
    LETTER.JS — Handcrafted Letter Experience
    Ink reveal, cursor candlelight, paper reactions
+   Stops animation loops when scene is hidden
    ============================================ */
 
 const Letter = (() => {
@@ -10,7 +11,7 @@ const Letter = (() => {
   let cursorLight = null;
   let letterPaper = null;
   let mouseX = 0, mouseY = 0;
-  let animId;
+  let lightAnimId = null;
 
   function init() {
     cursorLight = document.getElementById('cursorLight');
@@ -27,14 +28,28 @@ const Letter = (() => {
     const scene = document.getElementById('sceneLetter');
     if (!scene) return;
 
-    // Show scene
+    revealed = false;
+    revealIndex = 0;
+
+    // Reset all ink-reveal elements
+    paragraphs.forEach(el => {
+      el.classList.remove('revealed', 'glow', 'settled', 'in');
+    });
+
+    scene.style.display = '';
     scene.classList.add('active');
+
+    // Scroll to top so letter is visible
+    window.scrollTo(0, 0);
 
     // Init letter dust
     Particles.initLetterDust(letterPaper);
 
-    // Start cursor light tracking
-    startCursorLight();
+    // Start cursor light (desktop only — no cursor on mobile)
+    const isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent) || window.innerWidth < 768;
+    if (!isMobile) {
+      startCursorLight();
+    }
 
     // Begin ink reveal sequence
     setTimeout(() => {
@@ -61,7 +76,6 @@ const Letter = (() => {
         const relX = (cx - rect.left) / rect.width;
         const relY = (cy - rect.top) / rect.height;
 
-        // Subtle shadow shift
         const shadowX = (0.5 - relX) * 8;
         const shadowY = (0.5 - relY) * 8;
         letterPaper.style.boxShadow = `
@@ -71,7 +85,7 @@ const Letter = (() => {
         `;
       }
 
-      animId = requestAnimationFrame(updateLight);
+      lightAnimId = requestAnimationFrame(updateLight);
     }
 
     updateLight();
@@ -117,7 +131,7 @@ const Letter = (() => {
 
     revealIndex++;
 
-    // Delay between paragraphs (fountain pen speed)
+    // Delay between paragraphs
     const delay = el.tagName === 'P' ? 2200 : 1200;
     setTimeout(revealNext, delay);
   }
@@ -139,20 +153,21 @@ const Letter = (() => {
   }
 
   /* ---- Hidden features ---- */
-
-  // Long press on paper reveals hidden note
   function setupLongPress() {
     if (!letterPaper) return;
     let pressTimer = null;
 
-    letterPaper.addEventListener('mousedown', () => {
-      pressTimer = setTimeout(() => {
-        showHiddenNote();
-      }, 2000);
-    });
+    const startPress = () => {
+      pressTimer = setTimeout(() => { showHiddenNote(); }, 2000);
+    };
+    const endPress = () => { clearTimeout(pressTimer); };
 
-    letterPaper.addEventListener('mouseup', () => clearTimeout(pressTimer));
-    letterPaper.addEventListener('mouseleave', () => clearTimeout(pressTimer));
+    letterPaper.addEventListener('mousedown', startPress);
+    letterPaper.addEventListener('mouseup', endPress);
+    letterPaper.addEventListener('mouseleave', endPress);
+    letterPaper.addEventListener('touchstart', startPress, { passive: true });
+    letterPaper.addEventListener('touchend', endPress);
+    letterPaper.addEventListener('touchcancel', endPress);
   }
 
   function showHiddenNote() {
@@ -170,11 +185,8 @@ const Letter = (() => {
     note.textContent = 'You found the hidden note. That means you looked closer. I like that about you.';
     letterPaper.appendChild(note);
 
-    requestAnimationFrame(() => {
-      note.style.opacity = '0.6';
-    });
+    requestAnimationFrame(() => { note.style.opacity = '0.6'; });
 
-    // Hide after 5s
     setTimeout(() => {
       note.style.opacity = '0';
       setTimeout(() => note.remove(), 1000);
@@ -182,7 +194,15 @@ const Letter = (() => {
   }
 
   function hide() {
-    cancelAnimationFrame(animId);
+    // Stop cursor light animation
+    if (lightAnimId) {
+      cancelAnimationFrame(lightAnimId);
+      lightAnimId = null;
+    }
+    // Hide cursor light element
+    if (cursorLight) {
+      cursorLight.style.display = 'none';
+    }
   }
 
   function isRevealed() {

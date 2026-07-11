@@ -1,7 +1,7 @@
 /* ============================================
    ANIMATIONS.JS — Main Orchestrator
    Scene flow: Night → Pop → Rather → Letter → End
-   Mobile-aware
+   Key rule: only ONE scene is in the document flow at a time
    ============================================ */
 
 const App = (() => {
@@ -10,7 +10,6 @@ const App = (() => {
   let lanternActive = false;
   let seasonOrder = ['normal', 'winter', 'autumn', 'spring'];
   let seasonIndex = 0;
-  let lenis = null;
 
   const isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent) || window.innerWidth < 768;
 
@@ -31,17 +30,15 @@ const App = (() => {
 
   function bootstrap() {
     /* Lenis — desktop only */
-    if (!isMobile) {
+    if (!isMobile && typeof Lenis !== 'undefined') {
       try {
-        if (typeof Lenis !== 'undefined') {
-          lenis = new Lenis({
-            duration: 1.2,
-            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-            smooth: true,
-          });
-          function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
-          requestAnimationFrame(raf);
-        }
+        const lenis = new Lenis({
+          duration: 1.2,
+          easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+          smooth: true,
+        });
+        function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+        requestAnimationFrame(raf);
       } catch (e) { /* not critical */ }
     }
 
@@ -57,6 +54,12 @@ const App = (() => {
     Letter.init();
     Ending.init();
     Letter.setupLongPress();
+
+    /* Hide all non-night scenes from layout on startup */
+    ['scenePop', 'sceneRather', 'sceneLetter', 'sceneEnding'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
 
     /* Interactions */
     setupEnvelopeInteraction();
@@ -160,6 +163,15 @@ const App = (() => {
   /* ========================================
      TRANSITIONS
      ======================================== */
+
+  /** Collapse a scene from document flow so it doesn't take up space */
+  function collapseScene(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('active');
+    el.style.cssText = 'display:none;';
+  }
+
   function transitionToPop() {
     currentScene = 'pop';
     const nightScene = document.getElementById('sceneNight');
@@ -169,23 +181,35 @@ const App = (() => {
       opacity: 0, scale: 0.97, filter: 'blur(4px)',
       duration: 1, ease: 'power2.inOut',
       onComplete: () => {
-        nightScene.classList.remove('active');
-        nightScene.style.cssText = '';
-        FunScene.showPop();
+        collapseScene('sceneNight');
+        // Show pop scene
+        const popScene = document.getElementById('scenePop');
+        if (popScene) {
+          popScene.style.display = '';
+          popScene.classList.add('active');
+          FunScene.showPop();
+        }
       },
     });
   }
 
   function transitionToRather() {
     currentScene = 'rather';
-    FunScene.hidePop();
-    setTimeout(() => FunScene.showRather(), 900);
+    FunScene.hidePop('scenePop', () => {
+      const ratherScene = document.getElementById('sceneRather');
+      if (ratherScene) {
+        ratherScene.style.display = '';
+        ratherScene.classList.add('active');
+        FunScene.showRather();
+      }
+    });
   }
 
   function transitionToLetter() {
     currentScene = 'letter';
-    FunScene.hideRather();
-    setTimeout(() => Letter.show(), 900);
+    FunScene.hideRather('sceneRather', () => {
+      Letter.show();
+    });
   }
 
   /* ========================================
@@ -256,5 +280,5 @@ const App = (() => {
   }
 
   init();
-  return { init, showToast };
+  return { init, showToast, collapseScene };
 })();

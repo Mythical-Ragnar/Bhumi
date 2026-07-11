@@ -493,5 +493,15 @@ const Particles = (() => {
     removeEventListener('resize', resize);
   }
 
-  return { init, createFireflies, setSeason, setWind, initLetterDust, destroy };
+  /** Fade out the particles canvas (for ending) */
+  function fadeOut(duration) {
+    if (!canvas) return;
+    gsap.to(canvas, {
+      opacity: 0,
+      duration: duration || 3,
+      ease: 'power2.inOut',
+    });
+  }
+
+  return { init, createFireflies, setSeason, setWind, initLetterDust, destroy, fadeOut };
 })();

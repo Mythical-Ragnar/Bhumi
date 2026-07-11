@@ -1,6 +1,6 @@
 /* ============================================
    FUNSCENE.JS — Pop to Reveal + Would You Rather
-   Mobile-friendly touch handling
+   Mobile-friendly, uses callbacks for transitions
    ============================================ */
 
 const FunScene = (() => {
@@ -43,6 +43,7 @@ const FunScene = (() => {
       let touched = false;
 
       const handlePop = (e) => {
+        e.preventDefault();
         if (touched) return;
         touched = true;
         popBalloon(balloon);
@@ -119,19 +120,19 @@ const FunScene = (() => {
   /* ---- Would You Rather ---- */
   function setupRather() {
     const questions = document.querySelectorAll('.rather-q');
-    questions.forEach((q, i) => {
+    questions.forEach((q) => {
       q.querySelectorAll('.rather-btn').forEach(btn => {
         let handled = false;
         btn.addEventListener('click', () => {
           if (handled) return;
           handled = true;
-          handleRatherChoice(q, btn, i);
+          handleRatherChoice(q, btn);
         });
       });
     });
   }
 
-  function handleRatherChoice(q, btn, index) {
+  function handleRatherChoice(q, btn) {
     const choice = btn.dataset.choice;
     const siblings = q.querySelectorAll('.rather-btn');
     const result = q.querySelector('.rather-result');
@@ -162,11 +163,10 @@ const FunScene = (() => {
     }
   }
 
+  /* ---- Show / Hide with collapse ---- */
   function showPop() {
     const scene = document.getElementById('scenePop');
     if (!scene) return;
-
-    scene.classList.add('active');
 
     setTimeout(() => {
       scene.querySelectorAll('.reveal-text').forEach((el, i) => {
@@ -175,9 +175,10 @@ const FunScene = (() => {
     }, 300);
   }
 
-  function hidePop() {
-    const scene = document.getElementById('scenePop');
-    if (!scene) return;
+  /** Hide pop scene and collapse it, then call onComplete */
+  function hidePop(sceneId, onComplete) {
+    const scene = document.getElementById(sceneId);
+    if (!scene) { if (onComplete) onComplete(); return; }
 
     gsap.to(scene, {
       opacity: 0,
@@ -185,7 +186,8 @@ const FunScene = (() => {
       ease: 'power2.inOut',
       onComplete: () => {
         scene.classList.remove('active');
-        scene.style.cssText = '';
+        scene.style.display = 'none';
+        if (onComplete) onComplete();
       },
     });
   }
@@ -193,8 +195,6 @@ const FunScene = (() => {
   function showRather() {
     const scene = document.getElementById('sceneRather');
     if (!scene) return;
-
-    scene.classList.add('active');
 
     setTimeout(() => {
       scene.querySelectorAll('.reveal-text').forEach((el, i) => {
@@ -208,9 +208,10 @@ const FunScene = (() => {
     }, 300);
   }
 
-  function hideRather() {
-    const scene = document.getElementById('sceneRather');
-    if (!scene) return;
+  /** Hide rather scene and collapse it, then call onComplete */
+  function hideRather(sceneId, onComplete) {
+    const scene = document.getElementById(sceneId);
+    if (!scene) { if (onComplete) onComplete(); return; }
 
     gsap.to(scene, {
       opacity: 0,
@@ -218,7 +219,8 @@ const FunScene = (() => {
       ease: 'power2.inOut',
       onComplete: () => {
         scene.classList.remove('active');
-        scene.style.cssText = '';
+        scene.style.display = 'none';
+        if (onComplete) onComplete();
       },
     });
   }

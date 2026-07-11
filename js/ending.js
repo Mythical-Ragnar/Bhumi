@@ -1,7 +1,6 @@
 /* ============================================
    ENDING.JS — Cinematic Sunrise Ending
-   Moon set, stars fade, golden light, final line
-   Mobile-aware: collapses letter scene, scrolls to top
+   Collapses ALL previous scenes, shows ending full-screen
    ============================================ */
 
 const Ending = (() => {
@@ -20,10 +19,12 @@ const Ending = (() => {
 
     const scene = document.getElementById('sceneEnding');
     const letterScene = document.getElementById('sceneLetter');
-    const finalLine = document.getElementById('finalLine');
     const endingContent = document.querySelector('.ending-content');
 
     if (!scene) return;
+
+    // Stop letter animations
+    Letter.hide();
 
     // Phase 1: Fold letter paper
     setTimeout(() => {
@@ -33,37 +34,32 @@ const Ending = (() => {
           paper.classList.add('paper-fold');
         }
 
-        // Phase 2: Collapse letter scene from layout, scroll to ending
+        // Phase 2: Collapse letter scene
         setTimeout(() => {
           letterScene.classList.remove('active');
-          letterScene.style.cssText = 'display:none;';
+          letterScene.style.display = 'none';
 
-          // Force scroll to top so ending scene is visible
+          // Also collapse ALL other hidden scenes so they don't take up space
+          ['sceneNight', 'scenePop', 'sceneRather'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+          });
+
+          // Show ending scene — it's now the only thing in the document flow
+          scene.style.display = '';
+          scene.classList.add('active');
           window.scrollTo(0, 0);
 
-          // Fade stars
           fadeStars();
+          // Fade out particles so they don't cover the ending
+          if (typeof Particles !== 'undefined' && Particles.fadeOut) {
+            Particles.fadeOut(4);
+          }
         }, 1200);
       }
     }, 500);
 
-    // Phase 3: Show ending scene
-    setTimeout(() => {
-      scene.classList.add('active');
-      window.scrollTo(0, 0);
-
-      if (sunriseGradient) {
-        sunriseGradient.classList.add('active');
-      }
-
-      fadeMoon();
-
-      if (typeof AudioEngine !== 'undefined') {
-        AudioEngine.playCrickets(0.02);
-      }
-    }, 2500);
-
-    // Phase 4: Sunrise gradient fills
+    // Phase 3: Sunrise gradient fades in
     setTimeout(() => {
       if (sunriseGradient) {
         gsap.to(sunriseGradient, {
@@ -72,16 +68,17 @@ const Ending = (() => {
           ease: 'power2.inOut',
         });
       }
-    }, 3500);
+      fadeMoon();
+    }, 3000);
 
-    // Phase 5: Final line appears
+    // Phase 4: Final line appears
     setTimeout(() => {
       if (endingContent) {
         endingContent.classList.add('in');
       }
-    }, 5000);
+    }, 4500);
 
-    // Phase 6: Fade to white
+    // Phase 5: Fade to white
     setTimeout(() => {
       fadeToWhite();
     }, 10000);
@@ -99,20 +96,19 @@ const Ending = (() => {
   }
 
   function fadeMoon() {
-    if (typeof ThreeScene !== 'undefined') {
-      const threeScene = ThreeScene.getScene();
-      if (threeScene) {
-        threeScene.children.forEach(child => {
-          if (child.isSprite || (child.isMesh && child.geometry && child.geometry.type === 'SphereGeometry')) {
-            gsap.to(child.material, {
-              opacity: 0,
-              duration: 4,
-              ease: 'power2.inOut',
-            });
-          }
+    if (typeof ThreeScene === 'undefined') return;
+    const threeScene = ThreeScene.getScene();
+    if (!threeScene) return;
+
+    threeScene.children.forEach(child => {
+      if (child.material) {
+        gsap.to(child.material, {
+          opacity: 0,
+          duration: 4,
+          ease: 'power2.inOut',
         });
       }
-    }
+    });
   }
 
   function fadeToWhite() {
@@ -128,9 +124,6 @@ const Ending = (() => {
       opacity: 1,
       duration: 4,
       ease: 'power2.inOut',
-      onComplete: () => {
-        setTimeout(() => {}, 2000);
-      },
     });
   }
 

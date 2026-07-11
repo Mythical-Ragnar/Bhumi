@@ -846,10 +846,12 @@ img, svg {
 
 /* ---- Ending Scene ---- */
 .scene-ending {
-  background: linear-gradient(180deg, #1a1020 0%, #0a0a1a 100%);
+  background: transparent;
 }
 
 .ending-content {
+  position: relative;
+  z-index: 1;
   opacity: 0;
   transform: translateY(30px);
   transition: opacity 1.5s ease, transform 1.5s var(--ease-cinematic);
@@ -1010,10 +1012,11 @@ img, svg {
   /* Letter */
   .scene-letter {
     padding: 40px 12px 60px;
-    min-height: 100vh;
-    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 
   .letter-paper {
