@@ -55,6 +55,8 @@ html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -63,7 +65,15 @@ body {
   font-family: 'Cormorant Garamond', 'Georgia', serif;
   overflow-x: hidden;
   min-height: 100vh;
+  min-height: 100dvh;
   cursor: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+img, svg {
+  max-width: 100%;
+  height: auto;
 }
 
 ::selection {
@@ -662,7 +672,9 @@ body {
 .scene-letter {
   background: radial-gradient(ellipse at 50% 20%, #fff9ef 0%, var(--paper) 60%, var(--paper-warm) 100%);
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 80px 20px;
+  align-items: flex-start;
 }
 
 .letter-paper {
@@ -870,65 +882,227 @@ body {
 /* ---- Responsive ---- */
 @media (max-width: 768px) {
   :root {
-    --env-w: 280px;
-    --env-h: 180px;
+    --env-w: 260px;
+    --env-h: 170px;
     --paper-w: 100%;
   }
 
+  body {
+    font-size: 15px;
+  }
+
+  /* Scenes */
+  .scene {
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 20px 16px;
+  }
+
+  .scene-content {
+    padding: 16px;
+    max-width: 100%;
+  }
+
+  /* Envelope */
+  .envelope {
+    animation: envelopeFloat 4s ease-in-out infinite;
+  }
+
+  .env-address {
+    font-size: 1.3rem;
+    bottom: 18px;
+  }
+
+  .seal {
+    width: 46px;
+    height: 46px;
+  }
+
+  .seal-letter {
+    font-size: 1.3rem;
+  }
+
+  .scene-hint {
+    font-size: 1rem;
+    margin-top: 24px;
+  }
+
+  /* Firefly zone smaller on mobile */
+  .firefly-zone {
+    inset: -60px;
+  }
+
+  .firefly {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* Pop to Reveal */
+  .pop-title {
+    font-size: 1.5rem;
+    margin-bottom: 28px;
+    padding: 0 8px;
+  }
+
   .balloons-grid {
-    gap: 18px;
+    gap: 16px;
+    max-width: 100%;
   }
 
   .balloon-body {
-    width: 60px;
-    height: 72px;
-    font-size: 1.3rem;
+    width: 58px;
+    height: 70px;
+    font-size: 1.2rem;
   }
 
   .balloon-text {
-    width: 170px;
+    width: 150px;
+    font-size: 0.95rem;
+  }
+
+  .pop-progress {
+    font-size: 0.9rem;
+  }
+
+  /* Would You Rather */
+  .rather-title {
+    font-size: 1.5rem;
+    margin-bottom: 6px;
+  }
+
+  .rather-sub {
     font-size: 1rem;
+    margin-bottom: 28px;
+  }
+
+  .rather-questions {
+    gap: 28px;
+  }
+
+  .rather-prompt {
+    font-size: 1.05rem;
+    margin-bottom: 12px;
   }
 
   .rather-btn {
-    padding: 10px 18px;
+    padding: 10px 20px;
     font-size: 1rem;
   }
 
+  .rather-result {
+    font-size: 0.9rem;
+  }
+
+  /* Letter */
+  .scene-letter {
+    padding: 40px 12px 60px;
+    min-height: auto;
+  }
+
   .letter-paper {
-    padding: 40px 32px 60px;
+    padding: 36px 24px 56px;
+    border-radius: 4px;
   }
 
-  .letter-salutation {
-    font-size: 2rem;
+  .gold-border {
+    inset: 8px;
   }
 
-  .letter-para {
-    font-size: 0.95rem;
-    line-height: 1.9;
-  }
-
-  .final-line {
+  .wax-stamp-letter {
+    top: 18px;
+    right: 20px;
     font-size: 1.3rem;
   }
 
+  .paper-curl {
+    width: 35px;
+    height: 35px;
+  }
+
+  .corner {
+    display: none;
+  }
+
+  .letter-salutation {
+    font-size: 1.8rem;
+    margin-bottom: 24px;
+  }
+
+  .letter-para {
+    font-size: 0.92rem;
+    line-height: 1.85;
+    margin-bottom: 22px;
+  }
+
+  .letter-divider.in {
+    width: 50px;
+  }
+
+  .letter-signature {
+    font-size: 1.4rem;
+  }
+
+  .letter-ps {
+    font-size: 0.9rem;
+    margin-top: 28px;
+    padding-top: 18px;
+  }
+
+  /* Ending */
+  .final-line {
+    font-size: 1.2rem;
+    letter-spacing: 1px;
+    padding: 0 12px;
+  }
+
+  /* Audio toggle */
+  #audioToggle {
+    bottom: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+  }
+
+  /* Cursor light hidden on mobile */
   body { cursor: auto; }
   #cursorLight { display: none; }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 420px) {
+  :root {
+    --env-w: 220px;
+    --env-h: 145px;
+  }
+
+  body {
+    font-size: 14px;
+  }
+
   .pop-title, .rather-title {
-    font-size: 1.6rem;
+    font-size: 1.3rem;
+  }
+
+  .pop-title {
+    margin-bottom: 22px;
   }
 
   .balloons-grid {
-    gap: 14px;
+    gap: 10px;
   }
 
   .balloon-body {
-    width: 52px;
-    height: 64px;
-    font-size: 1.1rem;
+    width: 48px;
+    height: 60px;
+    font-size: 1rem;
+  }
+
+  .balloon-text {
+    width: 130px;
+    font-size: 0.85rem;
+  }
+
+  .rather-prompt {
+    font-size: 0.95rem;
   }
 
   .rather-options {
@@ -936,16 +1110,51 @@ body {
     align-items: stretch;
   }
 
+  .rather-btn {
+    padding: 10px 16px;
+    font-size: 0.95rem;
+    text-align: center;
+  }
+
   .letter-paper {
-    padding: 32px 24px 48px;
+    padding: 28px 18px 44px;
+  }
+
+  .letter-salutation {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+  }
+
+  .letter-para {
+    font-size: 0.88rem;
+    line-height: 1.8;
+    margin-bottom: 18px;
+  }
+
+  .letter-signature {
+    font-size: 1.2rem;
+  }
+
+  .env-address {
+    font-size: 1.1rem;
   }
 
   .seal {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
   }
 
   .seal-letter {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
+  }
+
+  .final-line {
+    font-size: 1.05rem;
+    line-height: 1.6;
+  }
+
+  /* Hide decorative elements that clutter small screens */
+  .env-shadow {
+    display: none;
   }
 }

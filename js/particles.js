@@ -107,10 +107,14 @@ const Particles = (() => {
       el.style.left = firefly.x + 'px';
       el.style.top = firefly.y + 'px';
 
-      el.addEventListener('click', (e) => {
+      const handleCatch = (e) => {
+        e.preventDefault();
         e.stopPropagation();
         catchFirefly(firefly);
-      });
+      };
+
+      el.addEventListener('click', handleCatch);
+      el.addEventListener('touchstart', handleCatch, { passive: false });
 
       container.appendChild(el);
       fireflies.push(firefly);

@@ -43,6 +43,10 @@ const FunScene = (() => {
       balloon.appendChild(textEl);
 
       balloon.addEventListener('click', () => popBalloon(balloon));
+      balloon.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        popBalloon(balloon);
+      }, { passive: false });
     });
   }
 
