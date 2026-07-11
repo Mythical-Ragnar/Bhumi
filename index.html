@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>For Bhumika</title>
+  <meta name="description" content="A cinematic romantic experience">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Great+Vibes&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+
+  <!-- Three.js canvas renders behind everything -->
+  <canvas id="threeCanvas"></canvas>
+
+  <!-- Post-processing overlay (film grain, vignette, chromatic) -->
+  <div id="postOverlay"></div>
+
+  <!-- Loading screen -->
+  <div id="loader">
+    <div class="loader-inner">
+      <div class="loader-ring"></div>
+      <div class="loader-text">preparing your story...</div>
+    </div>
+  </div>
+
+  <!-- Cursor light (candle effect) -->
+  <div id="cursorLight"></div>
+
+  <!-- Audio toggle -->
+  <button id="audioToggle" aria-label="Toggle audio">
+    <svg class="audio-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+    </svg>
+    <svg class="audio-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+      <line x1="23" y1="9" x2="17" y2="15"/>
+      <line x1="17" y1="9" x2="23" y2="15"/>
+    </svg>
+  </button>
+
+  <!-- Hidden features hints -->
+  <div id="hintToast" class="hint-toast"></div>
+
+  <!-- ============== SCENE 1: THE NIGHT ============== -->
+  <section id="sceneNight" class="scene scene-night active">
+    <div class="scene-content">
+      <div id="envelopeContainer" class="envelope-container">
+        <!-- Envelope (CSS-drawn) -->
+        <div id="envelope" class="envelope">
+          <div class="env-shadow"></div>
+          <div class="env-body">
+            <div class="env-texture"></div>
+            <div class="env-inner-flap"></div>
+          </div>
+          <div class="env-flap">
+            <div class="env-flap-texture"></div>
+          </div>
+          <div id="seal" class="seal">
+            <div class="seal-inner">
+              <span class="seal-letter">B</span>
+            </div>
+            <div class="seal-glow"></div>
+          </div>
+          <div class="env-address">For Bhumika</div>
+        </div>
+
+        <!-- Firefly targets -->
+        <div id="fireflyZone" class="firefly-zone"></div>
+      </div>
+
+      <p id="hint" class="scene-hint">catch the three fireflies to unlock</p>
+    </div>
+  </section>
+
+  <!-- ============== SCENE 2: POP TO REVEAL ============== -->
+  <section id="scenePop" class="scene scene-pop">
+    <div class="scene-content">
+      <h2 class="pop-title reveal-text">a few things about us, tap to reveal</h2>
+      <div class="balloons-grid" id="balloonsGrid">
+        <button class="balloon" data-text="We once talked until 4am and neither of us noticed">
+          <div class="balloon-body">♥</div>
+          <div class="balloon-string"></div>
+        </button>
+        <button class="balloon" data-text="You laugh at my jokes even when they're terrible">
+          <div class="balloon-body">♥</div>
+          <div class="balloon-string"></div>
+        </button>
+        <button class="balloon" data-text="I screenshot messages from you. Don't judge me.">
+          <div class="balloon-body">♥</div>
+          <div class="balloon-string"></div>
+        </button>
+        <button class="balloon" data-text="You remember things I said weeks ago that I barely remember saying">
+          <div class="balloon-body">♥</div>
+          <div class="balloon-string"></div>
+        </button>
+        <button class="balloon" data-text="I check if you're online before I go to sleep">
+          <div class="balloon-body">♥</div>
+          <div class="balloon-string"></div>
+        </button>
+        <button class="balloon" data-text="Some of my best nights ended with your goodnight text">
+          <div class="balloon-body">♥</div>
+          <div class="balloon-string"></div>
+        </button>
+      </div>
+      <p class="pop-progress reveal-text" id="popProgress">0 of 6 revealed</p>
+    </div>
+  </section>
+
+  <!-- ============== SCENE 3: WOULD YOU RATHER ============== -->
+  <section id="sceneRather" class="scene scene-rather">
+    <div class="scene-content">
+      <h2 class="rather-title reveal-text">one more thing &mdash;</h2>
+      <p class="rather-sub reveal-text">would you rather?</p>
+      <div class="rather-questions" id="ratherQuestions">
+
+        <div class="rather-q" data-q="1">
+          <p class="rather-prompt">Stay up all night talking or wake up to a long message from me?</p>
+          <div class="rather-options">
+            <button class="rather-btn" data-choice="talk">stay up talking</button>
+            <button class="rather-btn" data-choice="message">wake up to your message</button>
+          </div>
+          <p class="rather-result" id="ratherResult1"></p>
+        </div>
+
+        <div class="rather-q" data-q="2">
+          <p class="rather-prompt">I cook for you or we order in and watch something?</p>
+          <div class="rather-options">
+            <button class="rather-btn" data-choice="cook">you cook for me</button>
+            <button class="rather-btn" data-choice="order">order in & relax</button>
+          </div>
+          <p class="rather-result" id="ratherResult2"></p>
+        </div>
+
+        <div class="rather-q" data-q="3">
+          <p class="rather-prompt">Road trip with no playlist or playlist with no road trip?</p>
+          <div class="rather-options">
+            <button class="rather-btn" data-choice="road">road trip, always</button>
+            <button class="rather-btn" data-choice="playlist">just the playlist</button>
+          </div>
+          <p class="rather-result" id="ratherResult3"></p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== SCENE 4: THE LETTER ============== -->
+  <section id="sceneLetter" class="scene scene-letter">
+    <div class="letter-paper" id="letterPaper">
+      <div class="paper-texture"></div>
+      <div class="paper-edge-top"></div>
+      <div class="paper-edge-left"></div>
+      <div class="paper-curl"></div>
+      <div class="gold-border"></div>
+      <div class="wax-stamp-letter">❦</div>
+
+      <div class="letter-content">
+        <div class="letter-salutation ink-reveal">To Bhumika,</div>
+
+        <p class="letter-para ink-reveal">
+          I've been trying to figure out when exactly this started. Maybe it was one of those
+          late-night texts &mdash; the ones that were only supposed to be a quick check-in but
+          somehow turned into hours of talking back and forth. It's barely been a week, and
+          <span class="highlight-word">texting you already feels like a habit I never want to break</span>.
+        </p>
+
+        <p class="letter-para ink-reveal">
+          I used to be ridiculously awkward around you. I overthought everything I typed. But
+          somewhere along the way, things flipped. Now <span class="highlight-word">you're the one
+          who goes quiet</span> &mdash; or takes a little too long to reply &mdash; when I tease
+          you. I'd be lying if I said I don't notice it. I'd also be lying if I said I didn't love it.
+        </p>
+
+        <p class="letter-para soft ink-reveal">
+          I honestly just enjoy how our conversations flow. I love that you pick up on things I
+          haven't even spelled out, and that I don't have to pretend to be anyone else when I'm
+          talking to you. I find myself remembering the smallest details &mdash; like how hyped
+          you get over a Fortuner, a Range Rover, or a Defender. Someday, I want to be the guy
+          in the driver's seat, taking you for a spin in that <span class="highlight-word">SUV you keep talking about</span>.
+        </p>
+
+        <p class="letter-para ink-reveal">
+          You make me happy in the most effortless way. And somewhere between all the teasing
+          and those late-night messages, I realized I just want the same for you. I want you
+          to feel as <span class="highlight-word">completely comfortable and at ease</span>
+          with me as I do with you.
+        </p>
+
+        <div class="letter-divider ink-reveal"></div>
+
+        <p class="letter-para ink-reveal">
+          I don't think I need to spell out what this is. You already know. We both do.
+        </p>
+
+        <div class="letter-signature ink-reveal">&mdash; someone who notices</div>
+
+        <div class="letter-ps ink-reveal">
+          P.S. &mdash; Keep your phone close. I'm not done with our late-night chats yet.
+        </div>
+      </div>
+
+      <!-- Dust particles float above letter -->
+      <canvas id="dustCanvas" class="dust-canvas"></canvas>
+    </div>
+  </section>
+
+  <!-- ============== SCENE 4: THE ENDING ============== -->
+  <section id="sceneEnding" class="scene scene-ending">
+    <div class="scene-content ending-content">
+      <p id="finalLine" class="final-line">Some stories don't end when the page does.</p>
+    </div>
+  </section>
+
+  <!-- ============== SCREEN FLASH ============== -->
+  <div id="screenFlash" class="screen-flash"></div>
+
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/howler@2.2.4/dist/howler.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+
+  <script src="js/effects.js"></script>
+  <script src="js/threeScene.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/funScene.js"></script>
+  <script src="js/letter.js"></script>
+  <script src="js/ending.js"></script>
+  <script src="js/animations.js"></script>
+</body>
+</html>
