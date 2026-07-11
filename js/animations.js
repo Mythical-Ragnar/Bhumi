@@ -1,6 +1,7 @@
 /* ============================================
    ANIMATIONS.JS — Main Orchestrator
    Scene flow: Night → Pop → Rather → Letter → End
+   Mobile-aware
    ============================================ */
 
 const App = (() => {
@@ -11,7 +12,8 @@ const App = (() => {
   let seasonIndex = 0;
   let lenis = null;
 
-  /* Konami Code */
+  const isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent) || window.innerWidth < 768;
+
   const konamiSequence = [
     'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
     'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight',
@@ -28,18 +30,20 @@ const App = (() => {
   }
 
   function bootstrap() {
-    /* Lenis Smooth Scroll */
-    try {
-      if (typeof Lenis !== 'undefined') {
-        lenis = new Lenis({
-          duration: 1.2,
-          easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-          smooth: true,
-        });
-        function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
-        requestAnimationFrame(raf);
-      }
-    } catch (e) { /* not critical */ }
+    /* Lenis — desktop only */
+    if (!isMobile) {
+      try {
+        if (typeof Lenis !== 'undefined') {
+          lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            smooth: true,
+          });
+          function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+          requestAnimationFrame(raf);
+        }
+      } catch (e) { /* not critical */ }
+    }
 
     /* Init all modules */
     ThreeScene.init();
@@ -83,14 +87,22 @@ const App = (() => {
     const envelope = document.getElementById('envelope');
     if (!envelope) return;
 
-    document.addEventListener('mousemove', (e) => {
-      if (currentScene !== 'night') return;
-      const x = (e.clientX / window.innerWidth - 0.5) * 8;
-      const y = (e.clientY / window.innerHeight - 0.5) * 5;
-      envelope.style.transform = `
-        perspective(800px) rotateY(${x}deg) rotateX(${-y}deg)
-      `;
-    });
+    if (!isMobile) {
+      document.addEventListener('mousemove', (e) => {
+        if (currentScene !== 'night') return;
+        const x = (e.clientX / window.innerWidth - 0.5) * 8;
+        const y = (e.clientY / window.innerHeight - 0.5) * 5;
+        envelope.style.transform = `perspective(800px) rotateY(${x}deg) rotateX(${-y}deg)`;
+      });
+    } else {
+      document.addEventListener('touchmove', (e) => {
+        if (currentScene !== 'night') return;
+        if (!e.touches[0]) return;
+        const x = (e.touches[0].clientX / window.innerWidth - 0.5) * 8;
+        const y = (e.touches[0].clientY / window.innerHeight - 0.5) * 5;
+        envelope.style.transform = `perspective(800px) rotateY(${x}deg) rotateX(${-y}deg)`;
+      }, { passive: true });
+    }
 
     const fireflyZone = document.getElementById('fireflyZone');
     Particles.createFireflies(fireflyZone);
@@ -100,8 +112,10 @@ const App = (() => {
     const seal = document.getElementById('seal');
     if (!seal) return;
     seal.addEventListener('dblclick', () => showToast('B for Bhumika'));
-    seal.addEventListener('mouseenter', () => { seal.style.filter = 'brightness(1.2)'; });
-    seal.addEventListener('mouseleave', () => { seal.style.filter = ''; });
+    if (!isMobile) {
+      seal.addEventListener('mouseenter', () => { seal.style.filter = 'brightness(1.2)'; });
+      seal.addEventListener('mouseleave', () => { seal.style.filter = ''; });
+    }
   }
 
   function handleFireflyCaught(count) {
@@ -144,7 +158,7 @@ const App = (() => {
   }
 
   /* ========================================
-     TRANSITION: Night → Pop to Reveal
+     TRANSITIONS
      ======================================== */
   function transitionToPop() {
     currentScene = 'pop';
@@ -162,18 +176,12 @@ const App = (() => {
     });
   }
 
-  /* ========================================
-     TRANSITION: Pop → Would You Rather
-     ======================================== */
   function transitionToRather() {
     currentScene = 'rather';
     FunScene.hidePop();
     setTimeout(() => FunScene.showRather(), 900);
   }
 
-  /* ========================================
-     TRANSITION: Would You Rather → Letter
-     ======================================== */
   function transitionToLetter() {
     currentScene = 'letter';
     FunScene.hideRather();
@@ -187,7 +195,6 @@ const App = (() => {
     document.addEventListener('keydown', (e) => {
       const key = e.key;
 
-      /* Konami */
       if (key.toLowerCase() === konamiSequence[konamiIndex]) {
         konamiIndex++;
         if (konamiIndex === konamiSequence.length) {
@@ -198,14 +205,12 @@ const App = (() => {
         konamiIndex = 0;
       }
 
-      /* L: Lantern */
       if (key === 'l' || key === 'L') {
         lanternActive = !lanternActive;
         document.body.classList.toggle('lantern-active', lanternActive);
         showToast(lanternActive ? 'Lantern on' : 'Lantern off');
       }
 
-      /* S: Season (not during letter) */
       if ((key === 's' || key === 'S') && !e.ctrlKey && !e.metaKey) {
         if (currentScene !== 'letter' && currentScene !== 'ending') {
           seasonIndex = (seasonIndex + 1) % seasonOrder.length;
@@ -217,9 +222,6 @@ const App = (() => {
     });
   }
 
-  /* ========================================
-     Moon Interaction
-     ======================================== */
   function setupMoonInteraction() {
     document.addEventListener('dblclick', (e) => {
       if (currentScene !== 'night') return;
@@ -229,9 +231,6 @@ const App = (() => {
     });
   }
 
-  /* ========================================
-     Audio Toggle
-     ======================================== */
   function setupAudioToggle() {
     const btn = document.getElementById('audioToggle');
     if (!btn) return;

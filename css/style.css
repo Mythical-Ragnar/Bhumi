@@ -69,6 +69,7 @@ body {
   cursor: none;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
+  touch-action: manipulation;
 }
 
 img, svg {
@@ -177,6 +178,8 @@ img, svg {
   justify-content: center;
   opacity: 0;
   transition: opacity 0.6s ease, background 0.3s ease, border-color 0.3s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 #audioToggle.visible {
@@ -228,18 +231,17 @@ img, svg {
   position: relative;
   z-index: 2;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0s 1s;
 }
 
 .scene.active {
   opacity: 1;
   visibility: visible;
-  transition: opacity 0s 0s;
 }
 
 .scene-content {
@@ -280,6 +282,7 @@ img, svg {
   transform-style: preserve-3d;
   animation: envelopeFloat 5s ease-in-out infinite;
   cursor: none;
+  touch-action: manipulation;
 }
 
 @keyframes envelopeFloat {
@@ -495,6 +498,8 @@ img, svg {
   align-items: center;
   padding: 0;
   transition: transform 0.4s var(--ease-cinematic);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .balloon:hover {
@@ -631,6 +636,8 @@ img, svg {
   cursor: none;
   transition: all 0.4s var(--ease-cinematic);
   letter-spacing: 0.5px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .rather-btn:hover {
@@ -889,18 +896,25 @@ img, svg {
 
   body {
     font-size: 15px;
+    cursor: auto;
+    overscroll-behavior: none;
+    touch-action: manipulation;
   }
+
+  #cursorLight { display: none; }
 
   /* Scenes */
   .scene {
     min-height: 100vh;
     min-height: 100dvh;
     padding: 20px 16px;
+    touch-action: manipulation;
   }
 
   .scene-content {
     padding: 16px;
     max-width: 100%;
+    touch-action: manipulation;
   }
 
   /* Envelope */
@@ -1062,10 +1076,6 @@ img, svg {
     width: 40px;
     height: 40px;
   }
-
-  /* Cursor light hidden on mobile */
-  body { cursor: auto; }
-  #cursorLight { display: none; }
 }
 
 @media (max-width: 420px) {

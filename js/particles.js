@@ -1,6 +1,6 @@
 /* ============================================
    PARTICLES.JS — Fireflies, Petals, Embers, Dust
-   Flocking behavior, wind simulation, depth blur
+   Mobile-aware: reduced counts, fixed bounds
    ============================================ */
 
 const Particles = (() => {
@@ -13,14 +13,15 @@ const Particles = (() => {
   let windX = 0, windY = 0;
   let animId;
   let active = true;
-  let season = 'normal'; // normal, winter, autumn, spring
+  let season = 'normal';
 
-  const FIREFLY_COUNT = 3; // catchable ones
+  const isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent) || window.innerWidth < 768;
+  const FIREFLY_COUNT = 3;
   let onFireflyCaught = null;
 
-  const PETAL_COUNT = 18;
-  const EMBER_COUNT = 12;
-  const DUST_COUNT = 30;
+  const PETAL_COUNT = isMobile ? 6 : 18;
+  const EMBER_COUNT = isMobile ? 4 : 12;
+  const DUST_COUNT = isMobile ? 10 : 30;
 
   const petalChars = ['✿', '❀', '❁', '·'];
   const petalColors = {
@@ -37,6 +38,7 @@ const Particles = (() => {
     canvas.style.cssText = `
       position: fixed; inset: 0; z-index: 4;
       pointer-events: none; width: 100vw; height: 100vh;
+      touch-action: none;
     `;
     document.body.appendChild(canvas);
     ctx = canvas.getContext('2d');
@@ -56,19 +58,25 @@ const Particles = (() => {
   function resize() {
     if (!canvas) return;
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = window.innerWidth * dpr;
-    canvas.height = window.innerHeight * dpr;
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
-    // Reset transform and apply fresh scale
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
   function onPointerMove(e) {
-    const x = e.touches ? e.touches[0].clientX : e.clientX;
-    const y = e.touches ? e.touches[0].clientY : e.clientY;
-    pointerX = x;
-    pointerY = y;
+    if (e.touches) {
+      if (e.touches[0]) {
+        pointerX = e.touches[0].clientX;
+        pointerY = e.touches[0].clientY;
+      }
+    } else {
+      pointerX = e.clientX;
+      pointerY = e.clientY;
+    }
   }
 
   /* ---- Fireflies ---- */
@@ -76,65 +84,56 @@ const Particles = (() => {
     fireflies = [];
     if (!container) return;
 
-    const rect = container.getBoundingClientRect();
-
     for (let i = 0; i < FIREFLY_COUNT; i++) {
       const el = document.createElement('div');
       el.className = 'firefly';
       el.style.position = 'absolute';
       el.style.pointerEvents = 'all';
 
-      const fw = 10 + Math.random() * 200;
-      const fh = 10 + Math.random() * 200;
-
       const firefly = {
         el,
-        x: rect.width * 0.2 + Math.random() * rect.width * 0.6,
-        y: rect.height * 0.1 + Math.random() * rect.height * 0.6,
-        vx: (Math.random() - 0.5) * 1.5,
-        vy: (Math.random() - 0.5) * 1.5,
+        x: 0.2 + Math.random() * 0.6,
+        y: 0.1 + Math.random() * 0.5,
+        vx: (Math.random() - 0.5) * 0.01,
+        vy: (Math.random() - 0.5) * 0.01,
         targetX: 0,
         targetY: 0,
         phase: Math.random() * Math.PI * 2,
         caught: false,
-        bounds: { w: rect.width, h: rect.height },
       };
 
-      // Boid separation/alignment/cohesion targets
-      firefly.targetX = firefly.x + (Math.random() - 0.5) * 100;
-      firefly.targetY = firefly.y + (Math.random() - 0.5) * 100;
+      firefly.targetX = firefly.x + (Math.random() - 0.5) * 0.1;
+      firefly.targetY = firefly.y + (Math.random() - 0.5) * 0.1;
 
-      el.style.left = firefly.x + 'px';
-      el.style.top = firefly.y + 'px';
+      el.style.left = (firefly.x * 100) + '%';
+      el.style.top = (firefly.y * 100) + '%';
 
       const handleCatch = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        catchFirefly(firefly);
+        catchFirefly(firefly, container);
       };
 
       el.addEventListener('click', handleCatch);
-      el.addEventListener('touchstart', handleCatch, { passive: false });
+      el.addEventListener('touchend', handleCatch, { passive: false });
 
       container.appendChild(el);
       fireflies.push(firefly);
     }
   }
 
-  function catchFirefly(ff) {
+  function catchFirefly(ff, container) {
     if (ff.caught) return;
     ff.caught = true;
     ff.el.classList.add('caught');
 
-    // Create spark that flies to seal
+    const ffRect = ff.el.getBoundingClientRect();
     const spark = document.createElement('div');
     spark.className = 'spark';
-    const ffRect = ff.el.getBoundingClientRect();
     spark.style.left = (ffRect.left + ffRect.width / 2) + 'px';
     spark.style.top = (ffRect.top + ffRect.height / 2) + 'px';
     document.body.appendChild(spark);
 
-    // Find seal position
     const seal = document.getElementById('seal');
     if (seal) {
       const sealRect = seal.getBoundingClientRect();
@@ -145,10 +144,7 @@ const Particles = (() => {
         spark.style.opacity = '0.2';
       });
       setTimeout(() => spark.remove(), 800);
-    }
 
-    // Create energy ring at seal
-    if (seal) {
       const ring = document.createElement('div');
       ring.className = 'energy-ring';
       ring.style.left = '50%';
@@ -157,14 +153,13 @@ const Particles = (() => {
       setTimeout(() => ring.remove(), 900);
     }
 
-    // Spawn celebration particles
     spawnCatchParticles(ffRect.left + ffRect.width / 2, ffRect.top + ffRect.height / 2);
 
     if (onFireflyCaught) onFireflyCaught(fireflies.filter(f => f.caught).length);
   }
 
   function spawnCatchParticles(x, y) {
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < (isMobile ? 6 : 12); i++) {
       const angle = (Math.PI * 2 / 12) * i + Math.random() * 0.3;
       const speed = 1 + Math.random() * 3;
       embers.push({
@@ -182,63 +177,58 @@ const Particles = (() => {
   function updateFireflies(time) {
     const container = document.getElementById('fireflyZone');
     if (!container) return;
-    const rect = container.getBoundingClientRect();
 
     fireflies.forEach((ff, i) => {
       if (ff.caught) return;
 
-      // Flocking: wander toward target with slight randomness
       ff.phase += 0.02;
 
       const dx = ff.targetX - ff.x;
       const dy = ff.targetY - ff.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      if (dist < 15 || Math.random() < 0.01) {
-        ff.targetX = ff.x + (Math.random() - 0.5) * 150;
-        ff.targetY = ff.y + (Math.random() - 0.5) * 150;
+      if (dist < 0.01 || Math.random() < 0.01) {
+        ff.targetX = 0.1 + Math.random() * 0.8;
+        ff.targetY = 0.05 + Math.random() * 0.6;
       }
 
-      ff.vx += (dx / dist) * 0.08 + Math.sin(ff.phase) * 0.15;
-      ff.vy += (dy / dist) * 0.08 + Math.cos(ff.phase * 0.7) * 0.15;
+      ff.vx += (dx / dist) * 0.0004 + Math.sin(ff.phase) * 0.0008;
+      ff.vy += (dy / dist) * 0.0004 + Math.cos(ff.phase * 0.7) * 0.0008;
 
-      // Separation from other fireflies
+      // Separation
       fireflies.forEach((other, j) => {
         if (i === j || other.caught) return;
         const ox = ff.x - other.x;
         const oy = ff.y - other.y;
         const od = Math.sqrt(ox * ox + oy * oy);
-        if (od < 60) {
-          ff.vx += (ox / od) * 0.3;
-          ff.vy += (oy / od) * 0.3;
+        if (od < 0.08) {
+          ff.vx += (ox / od) * 0.001;
+          ff.vy += (oy / od) * 0.001;
         }
       });
 
-      // Bounds
-      const pad = 30;
-      if (ff.x < pad) ff.vx += 0.5;
-      if (ff.x > rect.width - pad) ff.vx -= 0.5;
-      if (ff.y < pad) ff.vy += 0.5;
-      if (ff.y > rect.height - pad) ff.vy -= 0.5;
+      // Bounds (0-1 range)
+      const pad = 0.04;
+      if (ff.x < pad) ff.vx += 0.002;
+      if (ff.x > 1 - pad) ff.vx -= 0.002;
+      if (ff.y < pad) ff.vy += 0.002;
+      if (ff.y > 1 - pad) ff.vy -= 0.002;
 
-      // Damping
       ff.vx *= 0.95;
       ff.vy *= 0.95;
 
-      // Clamp speed
       const speed = Math.sqrt(ff.vx * ff.vx + ff.vy * ff.vy);
-      if (speed > 3) {
-        ff.vx = (ff.vx / speed) * 3;
-        ff.vy = (ff.vy / speed) * 3;
+      if (speed > 0.015) {
+        ff.vx = (ff.vx / speed) * 0.015;
+        ff.vy = (ff.vy / speed) * 0.015;
       }
 
       ff.x += ff.vx;
       ff.y += ff.vy;
 
-      // Glow pulse
       const pulse = Math.sin(time * 2 + ff.phase) * 0.3 + 0.7;
-      ff.el.style.left = ff.x + 'px';
-      ff.el.style.top = ff.y + 'px';
+      ff.el.style.left = (ff.x * 100) + '%';
+      ff.el.style.top = (ff.y * 100) + '%';
       ff.el.style.opacity = pulse;
       ff.el.style.boxShadow = `
         0 0 ${8 + pulse * 10}px ${3 + pulse * 4}px rgba(255, 244, 176, ${0.5 + pulse * 0.3}),
@@ -279,11 +269,8 @@ const Particles = (() => {
       p.y += p.vy;
       p.x += p.vx + Math.sin(time * 0.5 + p.wobblePhase) * 0.3;
       p.rot += p.rotSpeed;
-
-      // Wind
       p.x += windX * 0.5;
 
-      // Repel from pointer
       const dx = p.x - pointerX;
       const dy = p.y - pointerY;
       const dist = Math.sqrt(dx * dx + dy * dy);
@@ -293,7 +280,6 @@ const Particles = (() => {
         p.y += (dy / dist) * force;
       }
 
-      // Wrap
       if (p.y > h + 20) { p.y = -20; p.x = Math.random() * w; }
       if (p.x < -20) p.x = w + 20;
       if (p.x > w + 20) p.x = -20;
@@ -336,7 +322,6 @@ const Particles = (() => {
 
     embers = embers.filter(e => e.life > 0);
 
-    // Refill
     while (embers.length < EMBER_COUNT) {
       embers.push({
         x: Math.random() * w,
@@ -362,7 +347,6 @@ const Particles = (() => {
       ctx.globalAlpha = e.life * 0.6;
       ctx.fill();
 
-      // Glow
       ctx.beginPath();
       ctx.arc(e.x, e.y, e.size * e.life * 3, 0, Math.PI * 2);
       ctx.fillStyle = e.color;
@@ -413,7 +397,7 @@ const Particles = (() => {
     ctx.restore();
   }
 
-  /* ---- Letter Dust (above paper) ---- */
+  /* ---- Letter Dust ---- */
   let letterDust = [];
   let letterDustCanvas, letterDustCtx;
 
@@ -429,7 +413,8 @@ const Particles = (() => {
     letterDustCanvas.style.height = paperEl.offsetHeight + 'px';
 
     letterDust = [];
-    for (let i = 0; i < 20; i++) {
+    const count = isMobile ? 8 : 20;
+    for (let i = 0; i < count; i++) {
       letterDust.push({
         x: Math.random() * letterDustCanvas.width,
         y: Math.random() * letterDustCanvas.height * 0.5,
@@ -457,11 +442,7 @@ const Particles = (() => {
     letterDust.forEach(d => {
       d.x += d.vx + Math.sin(time * 0.4 + d.phase) * 0.2;
       d.y += d.vy;
-
-      if (d.y < -10) {
-        d.y = sh * 0.5;
-        d.x = Math.random() * sw;
-      }
+      if (d.y < -10) { d.y = sh * 0.5; d.x = Math.random() * sw; }
 
       letterDustCtx.beginPath();
       letterDustCtx.arc(d.x / 2, d.y / 2, d.size, 0, Math.PI * 2);
@@ -482,7 +463,7 @@ const Particles = (() => {
     const time = (performance.now() - startTime) / 1000;
 
     if (ctx) {
-      ctx.clearRect(0, 0, canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
     }
 
     updatePetals(time);

@@ -1,6 +1,7 @@
 /* ============================================
    THREESCENE.JS — Cinematic Night Sky
    Stars, Milky Way, Moon, Clouds, Fog, Parallax
+   Mobile-aware: reduces complexity on small screens
    ============================================ */
 
 const ThreeScene = (() => {
@@ -15,14 +16,16 @@ const ThreeScene = (() => {
   let animId;
   let initialized = false;
 
+  const isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent) || window.innerWidth < 768;
+
   const CONFIG = {
-    starCount: 2000,
-    starSpread: 500,
-    shootingStarInterval: 4000,
-    parallaxStrength: 30,
+    starCount: isMobile ? 400 : 2000,
+    starSpread: isMobile ? 400 : 500,
+    shootingStarInterval: isMobile ? 8000 : 4000,
+    parallaxStrength: isMobile ? 10 : 30,
     moonSize: 15,
     moonPosition: { x: 120, y: 80, z: -200 },
-    cloudCount: 8,
+    cloudCount: isMobile ? 3 : 8,
     fogNear: 100,
     fogFar: 600,
   };
@@ -38,13 +41,15 @@ const ThreeScene = (() => {
     camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(0, 0, 200);
 
+    const canvas = document.getElementById('threeCanvas');
     renderer = new THREE.WebGLRenderer({
-      canvas: document.getElementById('threeCanvas'),
-      antialias: true,
+      canvas: canvas,
+      antialias: !isMobile,
       alpha: true,
+      powerPreference: isMobile ? 'low-power' : 'high-performance',
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
 
@@ -55,10 +60,22 @@ const ThreeScene = (() => {
     createAmbientFog();
     createShootingStars();
 
-    addEventListener('mousemove', onMouseMove);
     addEventListener('resize', onResize);
 
+    if (!isMobile) {
+      addEventListener('mousemove', onMouseMove);
+    } else {
+      addEventListener('touchmove', onTouchMove, { passive: true });
+    }
+
     animate();
+  }
+
+  function onTouchMove(e) {
+    if (e.touches[0]) {
+      targetMouseX = (e.touches[0].clientX / window.innerWidth - 0.5) * 2;
+      targetMouseY = (e.touches[0].clientY / window.innerHeight - 0.5) * 2;
+    }
   }
 
   /* ---- Stars ---- */
@@ -71,8 +88,6 @@ const ThreeScene = (() => {
 
     for (let i = 0; i < CONFIG.starCount; i++) {
       const i3 = i * 3;
-
-      // Spherical distribution
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
       const r = CONFIG.starSpread * (0.3 + Math.random() * 0.7);
@@ -83,23 +98,13 @@ const ThreeScene = (() => {
 
       sizes[i] = Math.random() * 2.5 + 0.5;
 
-      // Slightly warm/cool tinted stars
       const temp = Math.random();
       if (temp > 0.85) {
-        // Blue-white
-        colors[i3] = 0.85;
-        colors[i3 + 1] = 0.9;
-        colors[i3 + 2] = 1.0;
+        colors[i3] = 0.85; colors[i3 + 1] = 0.9; colors[i3 + 2] = 1.0;
       } else if (temp > 0.7) {
-        // Warm
-        colors[i3] = 1.0;
-        colors[i3 + 1] = 0.95;
-        colors[i3 + 2] = 0.8;
+        colors[i3] = 1.0; colors[i3 + 1] = 0.95; colors[i3 + 2] = 0.8;
       } else {
-        // Pure white
-        colors[i3] = 0.98;
-        colors[i3 + 1] = 0.98;
-        colors[i3 + 2] = 0.98;
+        colors[i3] = 0.98; colors[i3 + 1] = 0.98; colors[i3 + 2] = 0.98;
       }
 
       twinklePhases[i] = Math.random() * Math.PI * 2;
@@ -116,7 +121,6 @@ const ThreeScene = (() => {
       uniform float uTime;
       varying vec3 vColor;
       varying float vOpacity;
-
       void main() {
         vColor = color;
         float twinkle = sin(uTime * 0.8 + twinklePhase * 6.28) * 0.3 + 0.7;
@@ -130,7 +134,6 @@ const ThreeScene = (() => {
     const fragmentShader = `
       varying vec3 vColor;
       varying float vOpacity;
-
       void main() {
         float d = length(gl_PointCoord - vec2(0.5));
         if (d > 0.5) discard;
@@ -143,9 +146,7 @@ const ThreeScene = (() => {
     const material = new THREE.ShaderMaterial({
       vertexShader,
       fragmentShader,
-      uniforms: {
-        uTime: { value: 0 },
-      },
+      uniforms: { uTime: { value: 0 } },
       transparent: true,
       vertexColors: true,
       depthWrite: false,
@@ -163,34 +164,26 @@ const ThreeScene = (() => {
     canvas.height = 256;
     const ctx = canvas.getContext('2d');
 
-    // Generate milky way texture
     const gradient = ctx.createLinearGradient(0, 0, 512, 0);
     gradient.addColorStop(0, 'rgba(60,50,80,0)');
     gradient.addColorStop(0.3, 'rgba(80,70,100,0.15)');
     gradient.addColorStop(0.5, 'rgba(100,85,120,0.2)');
     gradient.addColorStop(0.7, 'rgba(80,70,100,0.15)');
     gradient.addColorStop(1, 'rgba(60,50,80,0)');
-
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 512, 256);
 
-    // Add noise
-    for (let i = 0; i < 3000; i++) {
-      const x = Math.random() * 512;
-      const y = 80 + Math.random() * 96;
-      const alpha = Math.random() * 0.08;
-      ctx.fillStyle = `rgba(180,170,200,${alpha})`;
-      ctx.fillRect(x, y, 1, 1);
+    const noiseCount = isMobile ? 1000 : 3000;
+    for (let i = 0; i < noiseCount; i++) {
+      ctx.fillStyle = `rgba(180,170,200,${Math.random() * 0.08})`;
+      ctx.fillRect(Math.random() * 512, 80 + Math.random() * 96, 1, 1);
     }
 
     const texture = new THREE.CanvasTexture(canvas);
     const geometry = new THREE.PlaneGeometry(800, 200);
     const material = new THREE.MeshBasicMaterial({
-      map: texture,
-      transparent: true,
-      opacity: 0.6,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
+      map: texture, transparent: true, opacity: 0.6,
+      blending: THREE.AdditiveBlending, depthWrite: false,
     });
 
     milkyWay = new THREE.Mesh(geometry, material);
@@ -201,25 +194,16 @@ const ThreeScene = (() => {
 
   /* ---- Moon ---- */
   function createMoon() {
-    // Moon body
-    const moonGeo = new THREE.SphereGeometry(CONFIG.moonSize, 32, 32);
-    const moonMat = new THREE.MeshBasicMaterial({
-      color: 0xfff4d6,
-    });
+    const moonGeo = new THREE.SphereGeometry(CONFIG.moonSize, isMobile ? 16 : 32, isMobile ? 16 : 32);
+    const moonMat = new THREE.MeshBasicMaterial({ color: 0xfff4d6 });
     moonMesh = new THREE.Mesh(moonGeo, moonMat);
-    moonMesh.position.set(
-      CONFIG.moonPosition.x,
-      CONFIG.moonPosition.y,
-      CONFIG.moonPosition.z
-    );
+    moonMesh.position.set(CONFIG.moonPosition.x, CONFIG.moonPosition.y, CONFIG.moonPosition.z);
     scene.add(moonMesh);
 
-    // Moon glow (sprite)
     const glowCanvas = document.createElement('canvas');
     glowCanvas.width = 256;
     glowCanvas.height = 256;
     const gCtx = glowCanvas.getContext('2d');
-
     const grad = gCtx.createRadialGradient(128, 128, 10, 128, 128, 128);
     grad.addColorStop(0, 'rgba(255, 244, 210, 0.6)');
     grad.addColorStop(0.3, 'rgba(255, 230, 180, 0.25)');
@@ -230,11 +214,8 @@ const ThreeScene = (() => {
 
     const glowTexture = new THREE.CanvasTexture(glowCanvas);
     const glowMat = new THREE.SpriteMaterial({
-      map: glowTexture,
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      opacity: 0.7,
+      map: glowTexture, transparent: true,
+      blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.7,
     });
 
     moonGlow = new THREE.Sprite(glowMat);
@@ -242,7 +223,6 @@ const ThreeScene = (() => {
     moonGlow.position.copy(moonMesh.position);
     scene.add(moonGlow);
 
-    // Moon light
     const moonLight = new THREE.PointLight(0xffeedd, 0.4, 400);
     moonLight.position.copy(moonMesh.position);
     scene.add(moonLight);
@@ -252,15 +232,15 @@ const ThreeScene = (() => {
   function createClouds() {
     for (let i = 0; i < CONFIG.cloudCount; i++) {
       const canvas = document.createElement('canvas');
-      canvas.width = 512;
-      canvas.height = 128;
+      canvas.width = isMobile ? 256 : 512;
+      canvas.height = isMobile ? 64 : 128;
       const ctx = canvas.getContext('2d');
 
       const alpha = 0.03 + Math.random() * 0.05;
       const cloudW = 200 + Math.random() * 200;
+      const circleCount = isMobile ? 6 : 12;
 
-      // Draw cloud shape
-      for (let j = 0; j < 12; j++) {
+      for (let j = 0; j < circleCount; j++) {
         const cx = 100 + Math.random() * (cloudW - 100);
         const cy = 40 + Math.random() * 48;
         const rx = 40 + Math.random() * 80;
@@ -269,7 +249,6 @@ const ThreeScene = (() => {
         const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, rx);
         grad.addColorStop(0, `rgba(160,150,180,${alpha})`);
         grad.addColorStop(1, 'rgba(160,150,180,0)');
-
         ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
@@ -279,9 +258,7 @@ const ThreeScene = (() => {
       const texture = new THREE.CanvasTexture(canvas);
       const geo = new THREE.PlaneGeometry(300 + Math.random() * 200, 60 + Math.random() * 40);
       const mat = new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-        depthWrite: false,
+        map: texture, transparent: true, depthWrite: false,
         opacity: 0.5 + Math.random() * 0.5,
       });
 
@@ -299,30 +276,23 @@ const ThreeScene = (() => {
     }
   }
 
-  /* ---- Fog particles ---- */
+  /* ---- Fog ---- */
   function createAmbientFog() {
-    const count = 60;
+    const count = isMobile ? 20 : 60;
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(count * 3);
-    const sizes = new Float32Array(count);
 
     for (let i = 0; i < count; i++) {
       positions[i * 3] = (Math.random() - 0.5) * 400;
       positions[i * 3 + 1] = -40 + Math.random() * 20;
       positions[i * 3 + 2] = Math.random() * 200 - 100;
-      sizes[i] = 20 + Math.random() * 40;
     }
 
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
     const mat = new THREE.PointsMaterial({
-      color: 0x8888aa,
-      transparent: true,
-      opacity: 0.04,
-      size: 30,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
+      color: 0x8888aa, transparent: true, opacity: 0.04,
+      size: 30, depthWrite: false, blending: THREE.AdditiveBlending,
     });
 
     fog = new THREE.Points(geometry, mat);
@@ -352,18 +322,11 @@ const ThreeScene = (() => {
       geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
       const mat = new THREE.LineBasicMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 1,
-        linewidth: 1,
+        color: 0xffffff, transparent: true, opacity: 1, linewidth: 1,
       });
 
       const star = new THREE.Line(geo, mat);
-      star.userData.progress = 0;
-      star.userData.startX = startX;
-      star.userData.startY = startY;
-      star.userData.angle = angle;
-      star.userData.length = length;
+      star.userData = { progress: 0, startX, startY, angle, length };
 
       scene.add(star);
       shootingStars.push(star);
@@ -387,7 +350,6 @@ const ThreeScene = (() => {
     scheduleNext();
   }
 
-  /* ---- Event Handlers ---- */
   function onMouseMove(e) {
     targetMouseX = (e.clientX / window.innerWidth - 0.5) * 2;
     targetMouseY = (e.clientY / window.innerHeight - 0.5) * 2;
@@ -400,41 +362,34 @@ const ThreeScene = (() => {
     renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
-  /* ---- Animation Loop ---- */
   function animate() {
     if (!initialized) return;
     animId = requestAnimationFrame(animate);
 
     const time = clock.getElapsedTime();
 
-    // Smooth mouse follow
     mouseX += (targetMouseX - mouseX) * 0.03;
     mouseY += (targetMouseY - mouseY) * 0.03;
 
-    // Parallax camera
     camera.position.x = mouseX * CONFIG.parallaxStrength;
     camera.position.y = -mouseY * CONFIG.parallaxStrength * 0.5;
     camera.lookAt(0, 0, -100);
 
-    // Star twinkle
     if (starField) {
       starField.material.uniforms.uTime.value = time;
       starField.rotation.y = time * 0.003;
     }
 
-    // Cloud drift
     clouds.forEach(cloud => {
       cloud.position.x = cloud.userData.baseX + Math.sin(time * cloud.userData.speed) * 40;
       cloud.position.x += time * cloud.userData.speed * 2;
       if (cloud.position.x > 350) cloud.position.x = -350;
     });
 
-    // Moon glow pulse
     if (moonGlow) {
       moonGlow.material.opacity = 0.5 + Math.sin(time * 0.5) * 0.15;
     }
 
-    // Shooting star animation
     shootingStars.forEach(star => {
       star.userData.progress += 0.02;
       const p = Math.min(star.userData.progress, 1);
@@ -442,14 +397,11 @@ const ThreeScene = (() => {
       star.material.opacity = Math.max(0, opacity);
 
       const positions = star.geometry.attributes.position.array;
-      const headX = star.userData.startX + Math.cos(star.userData.angle) * star.userData.length * p;
-      const headY = star.userData.startY + Math.sin(star.userData.angle) * star.userData.length * p;
-      positions[3] = headX;
-      positions[4] = headY;
+      positions[3] = star.userData.startX + Math.cos(star.userData.angle) * star.userData.length * p;
+      positions[4] = star.userData.startY + Math.sin(star.userData.angle) * star.userData.length * p;
       star.geometry.attributes.position.needsUpdate = true;
     });
 
-    // Fog drift
     if (fog) {
       const pos = fog.geometry.attributes.position.array;
       for (let i = 0; i < pos.length; i += 3) {
@@ -461,7 +413,6 @@ const ThreeScene = (() => {
     renderer.render(scene, camera);
   }
 
-  /* ---- Public API ---- */
   function triggerMoonClick() {
     for (let i = 0; i < 5; i++) {
       setTimeout(() => {
@@ -478,15 +429,9 @@ const ThreeScene = (() => {
         positions[4] = startY + Math.sin(angle) * length;
         positions[5] = CONFIG.moonPosition.z;
         geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        const mat = new THREE.LineBasicMaterial({
-          color: 0xffffff, transparent: true, opacity: 1,
-        });
+        const mat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1 });
         const star = new THREE.Line(geo, mat);
-        star.userData.progress = 0;
-        star.userData.startX = startX;
-        star.userData.startY = startY;
-        star.userData.angle = angle;
-        star.userData.length = length;
+        star.userData = { progress: 0, startX, startY, angle, length };
         scene.add(star);
         shootingStars.push(star);
         setTimeout(() => {
@@ -506,6 +451,7 @@ const ThreeScene = (() => {
     initialized = false;
     cancelAnimationFrame(animId);
     removeEventListener('mousemove', onMouseMove);
+    removeEventListener('touchmove', onTouchMove);
     removeEventListener('resize', onResize);
     if (renderer) renderer.dispose();
   }

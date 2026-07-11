@@ -1,6 +1,6 @@
 /* ============================================
    FUNSCENE.JS — Pop to Reveal + Would You Rather
-   Playful interactive scenes before the letter
+   Mobile-friendly touch handling
    ============================================ */
 
 const FunScene = (() => {
@@ -34,19 +34,22 @@ const FunScene = (() => {
 
     grid.querySelectorAll('.balloon').forEach(balloon => {
       const text = balloon.dataset.text;
-      const body = balloon.querySelector('.balloon-body');
 
-      // Create the reveal text element
       const textEl = document.createElement('div');
       textEl.className = 'balloon-text';
       textEl.textContent = text;
       balloon.appendChild(textEl);
 
-      balloon.addEventListener('click', () => popBalloon(balloon));
-      balloon.addEventListener('touchstart', (e) => {
-        e.preventDefault();
+      let touched = false;
+
+      const handlePop = (e) => {
+        if (touched) return;
+        touched = true;
         popBalloon(balloon);
-      }, { passive: false });
+        setTimeout(() => { touched = false; }, 300);
+      };
+
+      balloon.addEventListener('click', handlePop);
     });
   }
 
@@ -55,24 +58,20 @@ const FunScene = (() => {
     balloon.classList.add('popped');
     popCount++;
 
-    // Spawn confetti burst
     const rect = balloon.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
     spawnConfetti(cx, cy);
 
-    // Sparkle sound
     if (typeof AudioEngine !== 'undefined') {
       AudioEngine.playSparkle();
     }
 
-    // Update progress
     const progress = document.getElementById('popProgress');
     if (progress) {
       progress.textContent = `${popCount} of ${POP_TOTAL} revealed`;
     }
 
-    // All popped
     if (popCount === POP_TOTAL) {
       setTimeout(() => {
         const progress = document.getElementById('popProgress');
@@ -122,7 +121,12 @@ const FunScene = (() => {
     const questions = document.querySelectorAll('.rather-q');
     questions.forEach((q, i) => {
       q.querySelectorAll('.rather-btn').forEach(btn => {
-        btn.addEventListener('click', () => handleRatherChoice(q, btn, i));
+        let handled = false;
+        btn.addEventListener('click', () => {
+          if (handled) return;
+          handled = true;
+          handleRatherChoice(q, btn, i);
+        });
       });
     });
   }
@@ -132,7 +136,6 @@ const FunScene = (() => {
     const siblings = q.querySelectorAll('.rather-btn');
     const result = q.querySelector('.rather-result');
 
-    // Mark chosen/not chosen
     siblings.forEach(s => {
       if (s === btn) {
         s.classList.add('chosen');
@@ -141,7 +144,6 @@ const FunScene = (() => {
       }
     });
 
-    // Show response
     if (result) {
       result.textContent = ratherResponses[choice] || 'good choice.';
       setTimeout(() => result.classList.add('in'), 100);
@@ -149,7 +151,6 @@ const FunScene = (() => {
 
     ratherCount++;
 
-    // Sparkle
     if (typeof AudioEngine !== 'undefined') {
       AudioEngine.playSparkle();
     }
@@ -200,7 +201,6 @@ const FunScene = (() => {
         setTimeout(() => el.classList.add('in'), i * 200);
       });
 
-      // Stagger questions
       const questions = scene.querySelectorAll('.rather-q');
       questions.forEach((q, i) => {
         setTimeout(() => q.classList.add('in'), 600 + i * 400);
@@ -227,21 +227,10 @@ const FunScene = (() => {
     popCount = 0;
     ratherCount = 0;
 
-    document.querySelectorAll('.balloon').forEach(b => {
-      b.classList.remove('popped');
-    });
-
-    document.querySelectorAll('.rather-btn').forEach(b => {
-      b.classList.remove('chosen', 'not-chosen');
-    });
-
-    document.querySelectorAll('.rather-result').forEach(r => {
-      r.classList.remove('in');
-    });
-
-    document.querySelectorAll('.rather-q').forEach(q => {
-      q.classList.remove('in');
-    });
+    document.querySelectorAll('.balloon').forEach(b => b.classList.remove('popped'));
+    document.querySelectorAll('.rather-btn').forEach(b => b.classList.remove('chosen', 'not-chosen'));
+    document.querySelectorAll('.rather-result').forEach(r => r.classList.remove('in'));
+    document.querySelectorAll('.rather-q').forEach(q => q.classList.remove('in'));
 
     const progress = document.getElementById('popProgress');
     if (progress) {
