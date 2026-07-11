@@ -1,6 +1,7 @@
 /* ============================================
    ENDING.JS — Cinematic Sunrise Ending
    Moon set, stars fade, golden light, final line
+   Mobile-aware: collapses letter scene, scrolls to top
    ============================================ */
 
 const Ending = (() => {
@@ -8,7 +9,6 @@ const Ending = (() => {
   let sunriseGradient = null;
 
   function init() {
-    // Create sunrise gradient element
     sunriseGradient = document.createElement('div');
     sunriseGradient.className = 'sunrise-gradient';
     document.body.appendChild(sunriseGradient);
@@ -25,7 +25,7 @@ const Ending = (() => {
 
     if (!scene) return;
 
-    // Phase 1: Fade out letter
+    // Phase 1: Fold letter paper
     setTimeout(() => {
       if (letterScene) {
         const paper = document.getElementById('letterPaper');
@@ -33,35 +33,37 @@ const Ending = (() => {
           paper.classList.add('paper-fold');
         }
 
+        // Phase 2: Collapse letter scene from layout, scroll to ending
         setTimeout(() => {
           letterScene.classList.remove('active');
-          letterScene.style.opacity = '0';
+          letterScene.style.cssText = 'display:none;';
 
-          // Phase 2: Fade stars
+          // Force scroll to top so ending scene is visible
+          window.scrollTo(0, 0);
+
+          // Fade stars
           fadeStars();
         }, 1200);
       }
     }, 500);
 
-    // Phase 3: Sunrise
+    // Phase 3: Show ending scene
     setTimeout(() => {
       scene.classList.add('active');
+      window.scrollTo(0, 0);
 
-      // Start sunrise gradient
       if (sunriseGradient) {
         sunriseGradient.classList.add('active');
       }
 
-      // Fade moon
       fadeMoon();
 
-      // Birds singing
       if (typeof AudioEngine !== 'undefined') {
         AudioEngine.playCrickets(0.02);
       }
     }, 2500);
 
-    // Phase 4: Golden light fills
+    // Phase 4: Sunrise gradient fills
     setTimeout(() => {
       if (sunriseGradient) {
         gsap.to(sunriseGradient, {
@@ -97,12 +99,11 @@ const Ending = (() => {
   }
 
   function fadeMoon() {
-    // Animate Three.js moon glow
     if (typeof ThreeScene !== 'undefined') {
-      const scene = ThreeScene.getScene();
-      if (scene) {
-        scene.children.forEach(child => {
-          if (child.isSprite || (child.isMesh && child.geometry?.type === 'SphereGeometry')) {
+      const threeScene = ThreeScene.getScene();
+      if (threeScene) {
+        threeScene.children.forEach(child => {
+          if (child.isSprite || (child.isMesh && child.geometry && child.geometry.type === 'SphereGeometry')) {
             gsap.to(child.material, {
               opacity: 0,
               duration: 4,
@@ -128,10 +129,7 @@ const Ending = (() => {
       duration: 4,
       ease: 'power2.inOut',
       onComplete: () => {
-        // Final state
-        setTimeout(() => {
-          // Could reload or show restart option
-        }, 2000);
+        setTimeout(() => {}, 2000);
       },
     });
   }

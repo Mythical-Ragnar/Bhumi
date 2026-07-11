@@ -475,7 +475,10 @@ const Particles = (() => {
 
   function setSeason(s) {
     season = s;
-    document.body.className = s !== 'normal' ? `season-${s}` : '';
+    document.body.classList.remove('season-normal', 'season-winter', 'season-autumn', 'season-spring');
+    if (s !== 'normal') {
+      document.body.classList.add('season-' + s);
+    }
   }
 
   function setWind(x, y) {

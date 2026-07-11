@@ -1010,7 +1010,10 @@ img, svg {
   /* Letter */
   .scene-letter {
     padding: 40px 12px 60px;
-    min-height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .letter-paper {
