@@ -481,11 +481,12 @@ img, svg {
 
 .balloons-grid {
   display: flex;
-  gap: 28px;
+  gap: 32px 28px;
   justify-content: center;
   flex-wrap: wrap;
   max-width: 700px;
   margin: 0 auto 24px;
+  padding-bottom: 40px;
 }
 
 .balloon {
@@ -543,18 +544,21 @@ img, svg {
 
 .balloon-text {
   position: absolute;
-  top: 50%;
+  top: 100%;
   left: 50%;
-  transform: translate(-50%, -50%);
-  width: 200px;
+  transform: translateX(-50%);
+  width: 180px;
+  margin-top: 8px;
   font-family: 'Caveat', cursive;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   color: var(--paper);
   text-align: center;
-  line-height: 1.5;
+  line-height: 1.4;
   opacity: 0;
   transition: opacity 0.6s ease 0.3s;
   pointer-events: none;
+  white-space: normal;
+  z-index: 20;
 }
 
 .balloon.popped .balloon-text {
